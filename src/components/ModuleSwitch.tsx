@@ -9,25 +9,37 @@ interface Props {
   onChange: (m: Module) => void;
 }
 
+const LABELS: Record<Module, string> = {
+  pessoal: 'Pessoal',
+  empresa: 'Periscópio (PJ)',
+};
+
+/** Folder-style module tabs, matching the `.tabs`/`.tab`/`.tab.active`
+ * treatment from the validated prototype: active tab lifts with a card
+ * background and a bottom border colored by the module's accent. */
 export function ModuleSwitch({ value, onChange }: Props) {
   return (
-    <View style={styles.container}>
+    <View style={styles.row}>
       {(['pessoal', 'empresa'] as const).map((m) => {
-        const active = value === m;
+        const active = m === value;
         return (
           <Pressable
             key={m}
             onPress={() => onChange(m)}
             style={[
               styles.tab,
-              active && { backgroundColor: accentForModule(m) },
+              active && {
+                backgroundColor: colors.cardEmphasis,
+                borderColor: accentForModule(m),
+                borderBottomColor: accentForModule(m),
+              },
             ]}
           >
             <ThemedText
               variant="bodySemiBold"
-              style={{ color: active ? colors.background : colors.textSecondary }}
+              style={{ color: active ? colors.textPrimary : colors.textSecondary, fontSize: 14 }}
             >
-              {m === 'pessoal' ? 'Pessoal' : 'Periscópio'}
+              {LABELS[m]}
             </ThemedText>
           </Pressable>
         );
@@ -37,18 +49,14 @@ export function ModuleSwitch({ value, onChange }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 4,
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
-  },
+  row: { flexDirection: 'row', gap: 2 },
   tab: {
-    flex: 1,
     paddingVertical: 10,
-    borderRadius: 9,
-    alignItems: 'center',
+    paddingHorizontal: 22,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    borderBottomWidth: 2,
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
   },
 });

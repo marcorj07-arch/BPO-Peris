@@ -22,14 +22,6 @@ export default function AppLayout() {
           }}
         >
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen
-            name="transaction/new"
-            options={{ presentation: 'modal', title: 'Novo lançamento' }}
-          />
-          <Stack.Screen
-            name="transaction/[id]"
-            options={{ presentation: 'modal', title: 'Editar lançamento' }}
-          />
         </Stack>
       </DataProvider>
     </ModuleProvider>

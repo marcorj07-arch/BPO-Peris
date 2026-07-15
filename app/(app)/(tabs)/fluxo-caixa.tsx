@@ -1,9 +1,9 @@
 import { useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
 import { Dimensions, FlatList, Pressable, StyleSheet, View } from 'react-native';
-import { CashFlowChart } from '../../../src/components/CashFlowChart';
+import { AppHeader } from '../../../src/components/AppHeader';
 import { Card } from '../../../src/components/Card';
-import { ModuleSwitch } from '../../../src/components/ModuleSwitch';
+import { CashFlowChart } from '../../../src/components/CashFlowChart';
 import { ScreenContainer } from '../../../src/components/ScreenContainer';
 import { ThemedText } from '../../../src/components/ThemedText';
 import { useData } from '../../../src/context/DataContext';
@@ -41,47 +41,81 @@ export default function CashFlowScreen() {
 
   return (
     <ScreenContainer>
-      <View style={styles.header}>
-        <ModuleSwitch value={module} onChange={setModule} />
-      </View>
-
-      <Card>
-        <ThemedText variant="caption" style={styles.chartLabel}>
-          Saldo acumulado projetado (12 meses)
-        </ThemedText>
-        <CashFlowChart data={projection} width={screenWidth - 64} />
-      </Card>
-
       <FlatList
         data={projection}
         keyExtractor={(p) => p.month}
-        renderItem={({ item }) => (
-          <Pressable onPress={() => handleSelectMonth(item.month)}>
-            <Card style={styles.monthRow}>
-              <ThemedText variant="bodySemiBold" style={styles.monthLabel}>
-                {formatMonth(item.month)}
-              </ThemedText>
-              <View style={styles.monthNumbers}>
-                <ThemedText variant="caption" style={{ color: colors.receita }}>
-                  +{formatAmount(item.receitas)}
-                </ThemedText>
-                <ThemedText variant="caption" style={{ color: colors.despesa }}>
-                  -{formatAmount(item.despesas)}
-                </ThemedText>
-                <ThemedText variant="bodyMedium">{formatAmount(item.saldoAcumulado)}</ThemedText>
-              </View>
+        ListHeaderComponent={
+          <View>
+            <AppHeader module={module} onChangeModule={setModule} />
+            <ThemedText variant="panelTitle">Fluxo de caixa projetado · próximos 12 meses</ThemedText>
+
+            <Card style={styles.chartCard}>
+              <CashFlowChart data={projection} width={screenWidth - 76} />
             </Card>
-          </Pressable>
-        )}
+          </View>
+        }
+        renderItem={({ item }) => {
+          const estimatedCount = item.items.filter((i) => i.estimated).length;
+          return (
+            <Pressable onPress={() => handleSelectMonth(item.month)}>
+              <Card style={styles.monthRow}>
+                <View style={styles.monthLabelWrap}>
+                  <ThemedText variant="bodySemiBold" style={{ fontSize: 13 }}>
+                    {formatMonth(item.month)}
+                  </ThemedText>
+                  {estimatedCount > 0 && (
+                    <View style={styles.badge}>
+                      <ThemedText style={styles.badgeText}>
+                        {estimatedCount} estimado{estimatedCount > 1 ? 's' : ''}
+                      </ThemedText>
+                    </View>
+                  )}
+                </View>
+                <View style={styles.monthNumbers}>
+                  <ThemedText variant="rowMeta" style={{ color: colors.receita }}>
+                    {formatAmount(item.receitas)}
+                  </ThemedText>
+                  <ThemedText variant="rowMeta" style={{ color: colors.despesaSoft }}>
+                    {formatAmount(item.despesas)}
+                  </ThemedText>
+                  <ThemedText
+                    variant="bodySemiBold"
+                    style={{ fontSize: 13, color: item.saldoAcumulado >= 0 ? colors.receita : colors.despesaSoft }}
+                  >
+                    {formatAmount(item.saldoAcumulado)}
+                  </ThemedText>
+                </View>
+              </Card>
+            </Pressable>
+          );
+        }}
+        ListFooterComponent={
+          <ThemedText variant="caption" style={styles.note}>
+            Valores marcados como "estimado" ainda não foram lançados neste mês — são projetados a
+            partir das suas contas recorrentes (★) com o último valor conhecido. Contas sem nenhum
+            lançamento nos últimos 60 dias deixam de ser projetadas automaticamente.
+          </ThemedText>
+        }
+        contentContainerStyle={styles.listContent}
       />
     </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  header: { paddingTop: 12, marginBottom: 12 },
-  chartLabel: { marginBottom: 8 },
+  chartCard: { marginTop: 12, alignItems: 'center' },
   monthRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  monthLabel: { width: 56 },
+  monthLabelWrap: { width: 84 },
+  badge: {
+    backgroundColor: `${colors.accentPessoal}33`,
+    borderRadius: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    marginTop: 3,
+    alignSelf: 'flex-start',
+  },
+  badgeText: { fontSize: 9.5, color: colors.accentPessoal },
   monthNumbers: { flex: 1, flexDirection: 'row', justifyContent: 'space-between', marginLeft: 12 },
+  note: { marginTop: 16, lineHeight: 17 },
+  listContent: { paddingBottom: 40 },
 });

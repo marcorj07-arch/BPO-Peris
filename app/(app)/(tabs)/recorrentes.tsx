@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { AppHeader } from '../../../src/components/AppHeader';
 import { Card } from '../../../src/components/Card';
-import { ModuleSwitch } from '../../../src/components/ModuleSwitch';
 import { ScreenContainer } from '../../../src/components/ScreenContainer';
 import { ThemedText } from '../../../src/components/ThemedText';
 import { useData } from '../../../src/context/DataContext';
@@ -24,18 +24,19 @@ export default function RecurringScreen() {
 
   return (
     <ScreenContainer>
-      <View style={styles.header}>
-        <ModuleSwitch value={module} onChange={setModule} />
-      </View>
-
-      <ThemedText variant="caption" style={styles.hint}>
-        Contas marcadas com ★ nos lançamentos aparecem aqui e entram na projeção de fluxo de caixa
-        enquanto tiverem histórico recente (últimos 60 dias).
-      </ThemedText>
-
       <FlatList
         data={active}
         keyExtractor={(t) => t.id}
+        ListHeaderComponent={
+          <View>
+            <AppHeader module={module} onChangeModule={setModule} />
+            <ThemedText variant="panelTitle">Contas recorrentes ★</ThemedText>
+            <ThemedText variant="caption" style={styles.hint}>
+              Contas marcadas com ★ nos lançamentos aparecem aqui e entram na projeção de fluxo de caixa
+              enquanto tiverem histórico recente (últimos 60 dias).
+            </ThemedText>
+          </View>
+        }
         ListEmptyComponent={
           <ThemedText variant="caption" style={styles.empty}>
             Nenhuma conta recorrente marcada neste módulo ainda.
@@ -62,29 +63,38 @@ export default function RecurringScreen() {
                   <ThemedText style={{ color: colors.accentPessoal, fontSize: 18 }}>★</ThemedText>
                 </Pressable>
                 <View style={{ flex: 1 }}>
-                  <ThemedText variant="bodyMedium">{item.description}</ThemedText>
-                  <ThemedText variant="caption">
+                  <ThemedText variant="bodyMedium" style={{ color: colors.textRowAlt, fontSize: 13.5 }}>
+                    {item.description}
+                  </ThemedText>
+                  <ThemedText variant="rowMeta">
                     {item.category}
-                    {!eligible ? ' · sem projeção (sem histórico recente)' : ''}
+                    {!eligible && <ThemedText style={styles.badge}>  sem projeção</ThemedText>}
                   </ThemedText>
                 </View>
-                <ThemedText variant="amount" style={{ color: item.type === 'despesa' ? colors.despesa : colors.receita }}>
+                <ThemedText variant="amount" style={{ fontSize: 13.5, color: item.type === 'despesa' ? colors.despesaSoft : colors.receita }}>
                   {formatAmount(item.amount)}
                 </ThemedText>
               </View>
             </Card>
           );
         }}
+        contentContainerStyle={styles.listContent}
       />
     </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  header: { paddingTop: 12, marginBottom: 12 },
-  hint: { marginBottom: 12 },
-  empty: { textAlign: 'center', marginTop: 40 },
+  hint: { marginTop: 6, marginBottom: 16, lineHeight: 17 },
+  empty: { textAlign: 'center', marginTop: 40, color: colors.textMuted },
   row: { marginBottom: 10 },
   rowMain: { flexDirection: 'row', alignItems: 'center' },
   star: { marginRight: 10 },
+  badge: {
+    fontSize: 9.5,
+    backgroundColor: `${colors.accentPessoal}33`,
+    color: colors.accentPessoal,
+    overflow: 'hidden',
+  },
+  listContent: { paddingBottom: 40 },
 });
