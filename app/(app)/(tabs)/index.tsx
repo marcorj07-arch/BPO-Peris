@@ -1,119 +1,149 @@
-import { useRouter } from 'expo-router';
-import React, { useMemo } from 'react';
-import { FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
-import { Card } from '../../../src/components/Card';
-import { ModuleSwitch } from '../../../src/components/ModuleSwitch';
+import React, { useMemo, useState } from 'react';
+import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
+import { AppHeader } from '../../../src/components/AppHeader';
+import { CategoryBreakdown } from '../../../src/components/CategoryBreakdown';
+import { GrandTotal } from '../../../src/components/GrandTotal';
 import { MonthNav } from '../../../src/components/MonthNav';
+import { MonthlyTrendChart } from '../../../src/components/MonthlyTrendChart';
 import { ScreenContainer } from '../../../src/components/ScreenContainer';
+import { SummaryCardsGrid } from '../../../src/components/SummaryCardsGrid';
+import { TextField } from '../../../src/components/TextField';
 import { ThemedText } from '../../../src/components/ThemedText';
+import { TransactionCreateForm } from '../../../src/components/TransactionCreateForm';
+import { TransactionEditRow } from '../../../src/components/TransactionEditRow';
 import { TransactionListItem } from '../../../src/components/TransactionListItem';
 import { useData } from '../../../src/context/DataContext';
 import { useModule } from '../../../src/context/ModuleContext';
-import { formatAmount } from '../../../src/lib/parseAmount';
+import { computeMonthlyTrend } from '../../../src/lib/trend';
 import { filterByModuleAndMonth } from '../../../src/lib/transactions';
 import { colors } from '../../../src/theme';
-import { Transaction } from '../../../src/types';
 
 export default function TransactionsScreen() {
-  const router = useRouter();
   const { module, setModule, displayedMonth, setDisplayedMonth } = useModule();
-  const { transactions, loading, refresh, isDescriptionRecurring, toggleTemplateFor } = useData();
+  const { transactions, loading, refresh, isDescriptionRecurring, toggleTemplateFor, editTransaction, removeTransaction } =
+    useData();
+
+  const [search, setSearch] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const monthTransactions = useMemo(
     () =>
-      filterByModuleAndMonth(transactions, module, displayedMonth).sort((a, b) =>
-        a.date.localeCompare(b.date)
-      ),
+      filterByModuleAndMonth(transactions, module, displayedMonth).sort((a, b) => b.date.localeCompare(a.date)),
     [transactions, module, displayedMonth]
   );
 
-  const { receitas, despesas } = useMemo(() => {
+  const filteredTransactions = useMemo(() => {
+    if (!search.trim()) return monthTransactions;
+    const q = search.trim().toLowerCase();
+    return monthTransactions.filter(
+      (t) => t.description.toLowerCase().includes(q) || t.category.toLowerCase().includes(q)
+    );
+  }, [monthTransactions, search]);
+
+  const { receitas, despesas, pendente } = useMemo(() => {
     return monthTransactions.reduce(
       (acc, t) => {
         if (t.type === 'receita') acc.receitas += t.amount;
-        else acc.despesas += t.amount;
+        else {
+          acc.despesas += t.amount;
+          if (t.status === 'pendente') acc.pendente += t.amount;
+        }
         return acc;
       },
-      { receitas: 0, despesas: 0 }
+      { receitas: 0, despesas: 0, pendente: 0 }
     );
   }, [monthTransactions]);
 
-  const handleToggleRecurring = (t: Transaction) =>
-    toggleTemplateFor({ description: t.description, module: t.module, type: t.type, category: t.category, amount: t.amount });
+  const acumulado = useMemo(
+    () =>
+      transactions
+        .filter((t) => t.module === module)
+        .reduce((s, t) => s + (t.type === 'receita' ? t.amount : -t.amount), 0),
+    [transactions, module]
+  );
+
+  const trendPoints = useMemo(
+    () => computeMonthlyTrend(transactions, module, displayedMonth),
+    [transactions, module, displayedMonth]
+  );
+
+  const handleToggleStatus = (id: string, current: 'pago' | 'pendente') =>
+    editTransaction(id, { status: current === 'pago' ? 'pendente' : 'pago' });
+
+  const handleDelete = (id: string) => {
+    const t = monthTransactions.find((x) => x.id === id);
+    if (t) removeTransaction(t, 'one');
+  };
 
   return (
     <ScreenContainer>
-      <View style={styles.header}>
-        <ModuleSwitch value={module} onChange={setModule} />
-      </View>
-
-      <MonthNav monthKey={displayedMonth} onChange={setDisplayedMonth} />
-
-      <Card style={styles.summary}>
-        <View style={styles.summaryRow}>
-          <ThemedText variant="caption">Receitas</ThemedText>
-          <ThemedText variant="amount" style={{ color: colors.receita }}>
-            {formatAmount(receitas)}
-          </ThemedText>
-        </View>
-        <View style={styles.summaryRow}>
-          <ThemedText variant="caption">Despesas</ThemedText>
-          <ThemedText variant="amount" style={{ color: colors.despesa }}>
-            {formatAmount(despesas)}
-          </ThemedText>
-        </View>
-        <View style={[styles.summaryRow, styles.summaryTotal]}>
-          <ThemedText variant="bodySemiBold">Saldo do mês</ThemedText>
-          <ThemedText variant="amount">{formatAmount(receitas - despesas)}</ThemedText>
-        </View>
-      </Card>
-
       <FlatList
-        data={monthTransactions}
+        data={filteredTransactions}
         keyExtractor={(t) => t.id}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={refresh} tintColor={colors.textSecondary} />}
+        ListHeaderComponent={
+          <View>
+            <AppHeader module={module} onChangeModule={setModule} />
+            <MonthNav monthKey={displayedMonth} onChange={setDisplayedMonth} />
+            <SummaryCardsGrid module={module} receitas={receitas} despesas={despesas} pendente={pendente} acumulado={acumulado} />
+            <TransactionCreateForm module={module} />
+
+            <View style={styles.listHead}>
+              <ThemedText variant="panelTitle" style={{ marginBottom: 0 }}>
+                Lançamentos ({filteredTransactions.length})
+              </ThemedText>
+              <View style={styles.searchBox}>
+                <TextField value={search} onChangeText={setSearch} placeholder="Buscar…" style={styles.searchInput} />
+              </View>
+            </View>
+          </View>
+        }
         ListEmptyComponent={
           <ThemedText variant="caption" style={styles.empty}>
-            Nenhum lançamento neste mês.
+            Nenhum lançamento encontrado.
           </ThemedText>
         }
-        renderItem={({ item }) => (
-          <TransactionListItem
-            transaction={item}
-            recurring={isDescriptionRecurring(item.description, item.module)}
-            onPress={() => router.push(`/transaction/${item.id}`)}
-            onToggleRecurring={() => handleToggleRecurring(item)}
-          />
-        )}
+        renderItem={({ item }) =>
+          editingId === item.id ? (
+            <TransactionEditRow transaction={item} onDone={() => setEditingId(null)} />
+          ) : (
+            <TransactionListItem
+              transaction={item}
+              recurring={isDescriptionRecurring(item.description, item.module)}
+              onToggleStatus={() => handleToggleStatus(item.id, item.status)}
+              onEdit={() => setEditingId(item.id)}
+              onToggleRecurring={() =>
+                toggleTemplateFor({
+                  description: item.description,
+                  module: item.module,
+                  type: item.type,
+                  category: item.category,
+                  amount: item.amount,
+                })
+              }
+              onDelete={() => handleDelete(item.id)}
+            />
+          )
+        }
+        ListFooterComponent={
+          <View>
+            <View style={styles.spacer} />
+            <CategoryBreakdown transactions={monthTransactions} />
+            <MonthlyTrendChart points={trendPoints} />
+            <GrandTotal module={module} acumulado={acumulado} />
+            <View style={styles.bottomSpacer} />
+          </View>
+        }
       />
-
-      <Pressable style={styles.fab} onPress={() => router.push('/transaction/new')}>
-        <ThemedText style={styles.fabLabel}>+</ThemedText>
-      </Pressable>
     </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  header: { paddingTop: 12 },
-  summary: { marginTop: 8 },
-  summaryRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 },
-  summaryTotal: { borderTopWidth: 1, borderTopColor: colors.borderSubtle, marginTop: 6, paddingTop: 10 },
-  empty: { textAlign: 'center', marginTop: 40 },
-  fab: {
-    position: 'absolute',
-    right: 20,
-    bottom: 24,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: colors.accentEmpresa,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  fabLabel: { fontSize: 28, color: colors.background, lineHeight: 30 },
+  listHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
+  searchBox: { width: 140 },
+  searchInput: { paddingVertical: 6, fontSize: 12 },
+  empty: { textAlign: 'center', marginTop: 24, marginBottom: 24, color: colors.textMuted },
+  spacer: { height: 16 },
+  bottomSpacer: { height: 40 },
 });

@@ -4,15 +4,17 @@ import { colors, fonts } from '../theme';
 import { ThemedText } from './ThemedText';
 
 interface Props extends TextInputProps {
-  label: string;
+  label?: string;
 }
 
 export function TextField({ label, style, ...rest }: Props) {
   return (
     <View style={styles.wrapper}>
-      <ThemedText variant="caption" style={styles.label}>
-        {label}
-      </ThemedText>
+      {!!label && (
+        <ThemedText variant="caption" style={styles.label}>
+          {label}
+        </ThemedText>
+      )}
       <TextInput
         placeholderTextColor={colors.textSecondary}
         style={[styles.input, style]}

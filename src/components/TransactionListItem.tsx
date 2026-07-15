@@ -8,42 +8,62 @@ import { ThemedText } from './ThemedText';
 interface Props {
   transaction: Transaction;
   recurring: boolean;
-  onPress: () => void;
+  onToggleStatus: () => void;
+  onEdit: () => void;
   onToggleRecurring: () => void;
+  onDelete: () => void;
 }
 
-export function TransactionListItem({ transaction, recurring, onPress, onToggleRecurring }: Props) {
+export function TransactionListItem({
+  transaction,
+  recurring,
+  onToggleStatus,
+  onEdit,
+  onToggleRecurring,
+  onDelete,
+}: Props) {
   const isDespesa = transaction.type === 'despesa';
+  const isPendente = transaction.status === 'pendente';
   const installmentLabel =
     transaction.installmentGroup && transaction.installmentTotal
       ? ` · ${transaction.installmentIndex}/${transaction.installmentTotal}`
       : '';
 
   return (
-    <Pressable onPress={onPress} style={styles.row}>
-      <Pressable onPress={onToggleRecurring} hitSlop={10} style={styles.star}>
-        <ThemedText style={{ color: recurring ? colors.accentPessoal : colors.borderStrong, fontSize: 18 }}>
-          {recurring ? '★' : '☆'}
+    <View style={styles.row}>
+      <Pressable onPress={onToggleStatus} hitSlop={10} style={styles.statusDot}>
+        <ThemedText style={{ color: transaction.status === 'pago' ? colors.receita : colors.textSecondary, fontSize: 15 }}>
+          {transaction.status === 'pago' ? '●' : '○'}
         </ThemedText>
       </Pressable>
 
-      <View style={styles.middle}>
-        <ThemedText variant="bodyMedium" numberOfLines={1}>
+      <Pressable onPress={onEdit} style={styles.middle}>
+        <ThemedText variant="body" numberOfLines={1} style={{ fontSize: 13.5, color: isPendente ? colors.accentPessoal : colors.textBody }}>
           {transaction.description}
         </ThemedText>
-        <ThemedText variant="caption">
-          {transaction.category} · {transaction.date.split('-').reverse().join('/')}
+        <ThemedText variant="rowMeta">
+          {transaction.date.split('-').reverse().join('/')} · {transaction.category}
+          {transaction.paidBy ? ` · ${transaction.paidBy}` : ''}
           {installmentLabel}
-          {transaction.status === 'pendente' ? ' · pendente' : ''}
-          {transaction.reconciled ? ' · conciliado' : ''}
+          {transaction.reconciled ? ' · 🏦 conciliado' : ''}
         </ThemedText>
-      </View>
+      </Pressable>
 
-      <ThemedText variant="amount" style={{ color: isDespesa ? colors.despesa : colors.receita }}>
-        {isDespesa ? '-' : '+'}
-        {formatAmount(transaction.amount)}
-      </ThemedText>
-    </Pressable>
+      <View style={styles.actions}>
+        <ThemedText variant="amount" style={{ fontSize: 13.5, color: isDespesa ? colors.despesaSoft : colors.receita }}>
+          {isDespesa ? '−' : '+'} {formatAmount(transaction.amount)}
+        </ThemedText>
+        <Pressable onPress={onEdit} hitSlop={8} style={styles.iconBtn}>
+          <ThemedText style={{ color: colors.textMuted, fontSize: 13 }}>✎</ThemedText>
+        </Pressable>
+        <Pressable onPress={onToggleRecurring} hitSlop={8} style={styles.iconBtn}>
+          <ThemedText style={{ color: recurring ? colors.accentPessoal : colors.textMuted, fontSize: 13 }}>★</ThemedText>
+        </Pressable>
+        <Pressable onPress={onDelete} hitSlop={8} style={styles.iconBtn}>
+          <ThemedText style={{ color: colors.textMuted, fontSize: 13 }}>✕</ThemedText>
+        </Pressable>
+      </View>
+    </View>
   );
 }
 
@@ -51,10 +71,13 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 9,
+    paddingHorizontal: 4,
     borderBottomWidth: 1,
-    borderBottomColor: colors.borderSubtle,
+    borderBottomColor: colors.borderHairline,
   },
-  star: { marginRight: 10 },
-  middle: { flex: 1, marginRight: 8 },
+  statusDot: { paddingHorizontal: 4, flexShrink: 0 },
+  middle: { flex: 1, marginLeft: 4, marginRight: 8, minWidth: 0 },
+  actions: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0 },
+  iconBtn: { padding: 4 },
 });

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
+import { AppHeader } from '../../../src/components/AppHeader';
 import { Button } from '../../../src/components/Button';
 import { Card } from '../../../src/components/Card';
 import { CategoryPicker } from '../../../src/components/CategoryPicker';
-import { ModuleSwitch } from '../../../src/components/ModuleSwitch';
 import { ScreenContainer } from '../../../src/components/ScreenContainer';
 import { ThemedText } from '../../../src/components/ThemedText';
 import { useData } from '../../../src/context/DataContext';
@@ -78,11 +78,16 @@ export default function ReconciliationScreen() {
 
   return (
     <ScreenContainer>
-      <View style={styles.header}>
-        <ModuleSwitch value={module} onChange={setModule} />
-      </View>
+      <ScrollView keyboardShouldPersistTaps="handled">
+        <AppHeader module={module} onChangeModule={setModule} />
+        <ThemedText variant="panelTitle">Conciliação bancária</ThemedText>
 
-      <Button label="Selecionar extrato OFX/QFX" onPress={handlePickFile} loading={loadingFile} />
+        <View style={styles.uploadBox}>
+          <ThemedText variant="caption" style={styles.uploadHint}>
+            Envie o extrato em OFX (conta corrente ou fatura de cartão)
+          </ThemedText>
+          <Button label="Selecionar extrato OFX/QFX" onPress={handlePickFile} loading={loadingFile} variant="secondary" />
+        </View>
 
       {error && (
         <ThemedText variant="caption" style={styles.error}>
@@ -91,9 +96,11 @@ export default function ReconciliationScreen() {
       )}
 
       {result && (
-        <ScrollView style={styles.results} keyboardShouldPersistTaps="handled">
+        <View style={styles.results}>
           <Card>
-            <ThemedText variant="bodySemiBold">{result.matched.length} conciliados automaticamente</ThemedText>
+            <ThemedText variant="bodySemiBold" style={{ fontSize: 13.5 }}>
+              {result.matched.length} conciliados automaticamente
+            </ThemedText>
             <ThemedText variant="caption">
               Valor idêntico e data dentro de ±5 dias de um lançamento existente.
             </ThemedText>
@@ -109,7 +116,7 @@ export default function ReconciliationScreen() {
 
           {result.unmatchedLines.length > 0 && (
             <>
-              <ThemedText variant="subtitle" style={styles.sectionTitle}>
+              <ThemedText variant="panelTitle" style={styles.sectionTitle}>
                 Sem correspondência ({result.unmatchedLines.length})
               </ThemedText>
               {result.unmatchedLines.map((line) => {
@@ -150,33 +157,46 @@ export default function ReconciliationScreen() {
 
           {result.unmatchedTransactions.length > 0 && (
             <>
-              <ThemedText variant="subtitle" style={styles.sectionTitle}>
-                Lançamentos sem correspondência no extrato ({result.unmatchedTransactions.length})
+              <ThemedText variant="panelTitle" style={styles.sectionTitle}>
+                Sem correspondência no extrato ({result.unmatchedTransactions.length})
               </ThemedText>
               <ThemedText variant="caption" style={styles.sectionHint}>
                 Aviso, não erro — pode ser um lançamento ainda não compensado no banco.
               </ThemedText>
               {result.unmatchedTransactions.map((t) => (
                 <Card key={t.id}>
-                  <ThemedText variant="bodyMedium">{t.description}</ThemedText>
-                  <ThemedText variant="caption">
+                  <ThemedText variant="bodyMedium" style={{ color: colors.textRowAlt, fontSize: 13.5 }}>
+                    {t.description}
+                  </ThemedText>
+                  <ThemedText variant="rowMeta">
                     {t.date.split('-').reverse().join('/')} · {formatAmount(t.amount)}
                   </ThemedText>
                 </Card>
               ))}
             </>
           )}
-        </ScrollView>
+        </View>
       )}
+      </ScrollView>
     </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  header: { paddingTop: 12, marginBottom: 12 },
+  uploadBox: {
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderColor: colors.borderSubtle,
+    borderRadius: 8,
+    padding: 20,
+    alignItems: 'center',
+    marginTop: 12,
+    marginBottom: 16,
+  },
+  uploadHint: { marginBottom: 10, textAlign: 'center' },
   error: { color: colors.despesa, marginTop: 12, textAlign: 'center' },
-  results: { marginTop: 16 },
-  sectionTitle: { marginTop: 8, marginBottom: 8 },
+  results: { marginTop: 4, paddingBottom: 40 },
+  sectionTitle: { marginTop: 16, marginBottom: 8 },
   sectionHint: { marginBottom: 8 },
   confirmButton: { marginTop: 12 },
 });

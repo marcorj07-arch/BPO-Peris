@@ -1,6 +1,6 @@
 import { Redirect } from 'expo-router';
 import React, { useState } from 'react';
-import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
+import { Image, KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
 import { Button } from '../src/components/Button';
 import { ScreenContainer } from '../src/components/ScreenContainer';
 import { TextField } from '../src/components/TextField';
@@ -33,12 +33,15 @@ export default function LoginScreen() {
         style={styles.flex}
       >
         <View style={styles.center}>
-          <ThemedText variant="title" style={styles.brand}>
-            Periscópio
-          </ThemedText>
-          <ThemedText variant="caption" style={styles.subtitle}>
-            BPO Financeiro
-          </ThemedText>
+          <View style={styles.brandBlock}>
+            <Image source={require('../assets/logo.png')} style={styles.logo} />
+            <ThemedText variant="eyebrow" style={styles.eyebrow}>
+              Periscópio · Controle Financeiro
+            </ThemedText>
+            <ThemedText variant="h1" style={styles.brand}>
+              BPO Financeiro
+            </ThemedText>
+          </View>
 
           {!isSupabaseConfigured && (
             <ThemedText variant="caption" style={styles.warning}>
@@ -79,8 +82,10 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   center: { flex: 1, justifyContent: 'center' },
-  brand: { textAlign: 'center', color: colors.accentPessoal, marginBottom: 4 },
-  subtitle: { textAlign: 'center', marginBottom: 32 },
+  brandBlock: { alignItems: 'center', marginBottom: 8 },
+  logo: { width: 72, height: 72, borderRadius: 36, marginBottom: 16 },
+  eyebrow: { textAlign: 'center', marginBottom: 4 },
+  brand: { textAlign: 'center', marginBottom: 32 },
   warning: { color: colors.despesa, marginBottom: 16, textAlign: 'center' },
   error: { color: colors.despesa, marginBottom: 12, textAlign: 'center' },
 });

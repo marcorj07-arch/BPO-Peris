@@ -1,9 +1,8 @@
 import React, { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { AmountField } from '../../../src/components/AmountField';
+import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { AppHeader } from '../../../src/components/AppHeader';
 import { Button } from '../../../src/components/Button';
 import { Card } from '../../../src/components/Card';
-import { ModuleSwitch } from '../../../src/components/ModuleSwitch';
 import { MonthNav } from '../../../src/components/MonthNav';
 import { ScreenContainer } from '../../../src/components/ScreenContainer';
 import { ThemedText } from '../../../src/components/ThemedText';
@@ -82,66 +81,71 @@ export default function MoreScreen() {
   return (
     <ScreenContainer>
       <ScrollView contentContainerStyle={styles.scroll}>
-        <ThemedText variant="title" style={styles.title}>
-          Lançamento em lote
-        </ThemedText>
-        <ModuleSwitch value={module} onChange={setModule} />
-        <MonthNav monthKey={displayedMonth} onChange={setDisplayedMonth} />
+        <AppHeader module={module} onChangeModule={setModule} />
 
-        {checklist.length === 0 && (
-          <ThemedText variant="caption" style={styles.empty}>
-            Nenhuma conta recorrente ativa neste módulo.
-          </ThemedText>
-        )}
-
-        {receitas.length > 0 && (
-          <>
-            <ThemedText variant="bodySemiBold" style={styles.sectionTitle}>
-              Receitas
+        <Card>
+          <View style={styles.panelHeadRow}>
+            <ThemedText variant="panelTitle" style={{ marginBottom: 0 }}>
+              Selecione o que lançar no mês exibido
             </ThemedText>
-            {receitas.map((item) => (
-              <BatchRow key={item.template.id} item={item} row={getRow(item)} onChange={(p) => setRow(item.template.id, p)} />
-            ))}
-          </>
-        )}
+            <MonthNav monthKey={displayedMonth} onChange={setDisplayedMonth} />
+          </View>
 
-        {despesas.length > 0 && (
-          <>
-            <ThemedText variant="bodySemiBold" style={styles.sectionTitle}>
-              Despesas
+          {checklist.length === 0 && (
+            <ThemedText variant="caption" style={styles.empty}>
+              Nenhuma conta recorrente ativa neste módulo.
             </ThemedText>
-            {despesas.map((item) => (
-              <BatchRow key={item.template.id} item={item} row={getRow(item)} onChange={(p) => setRow(item.template.id, p)} />
-            ))}
-          </>
-        )}
+          )}
 
-        {checklist.length > 0 && (
-          <Button
-            label={`Lançar selecionados em ${displayedMonth}-05`}
-            onPress={handleBatchLaunch}
-            loading={launching}
-            style={styles.launchButton}
-          />
-        )}
+          {receitas.length > 0 && (
+            <View style={styles.group}>
+              <ThemedText variant="rowMeta" style={styles.groupTitle}>
+                RECEITAS
+              </ThemedText>
+              {receitas.map((item) => (
+                <BatchRow key={item.template.id} item={item} row={getRow(item)} onChange={(p) => setRow(item.template.id, p)} />
+              ))}
+            </View>
+          )}
 
-        {feedback && (
-          <ThemedText variant="caption" style={styles.feedback}>
-            {feedback}
-          </ThemedText>
-        )}
+          {despesas.length > 0 && (
+            <View style={styles.group}>
+              <ThemedText variant="rowMeta" style={styles.groupTitle}>
+                DESPESAS
+              </ThemedText>
+              {despesas.map((item) => (
+                <BatchRow key={item.template.id} item={item} row={getRow(item)} onChange={(p) => setRow(item.template.id, p)} />
+              ))}
+            </View>
+          )}
 
-        <ThemedText variant="title" style={styles.title}>
+          {checklist.length > 0 && (
+            <Button
+              label={`Lançar selecionados em ${displayedMonth}-05`}
+              onPress={handleBatchLaunch}
+              loading={launching}
+              style={styles.launchButton}
+            />
+          )}
+
+          {feedback && (
+            <ThemedText variant="caption" style={styles.feedback}>
+              {feedback}
+            </ThemedText>
+          )}
+        </Card>
+
+        <ThemedText variant="panelTitle" style={styles.title}>
           Exportar
         </ThemedText>
         <Card>
           <ThemedText variant="caption" style={styles.exportHint}>
             Gera uma planilha .xlsx com duas abas (Pessoal / Periscópio) de todos os lançamentos.
           </ThemedText>
-          <Button label="Exportar para Excel" onPress={handleExport} loading={exporting} variant="secondary" />
+          <Button label="⬇ Exportar Excel" onPress={handleExport} loading={exporting} variant="secondary" />
         </Card>
 
-        <ThemedText variant="title" style={styles.title}>
+        <ThemedText variant="panelTitle" style={styles.title}>
           Conta
         </ThemedText>
         <Button label="Sair" onPress={signOut} variant="ghost" />
@@ -160,38 +164,53 @@ function BatchRow({
   onChange: (patch: Partial<RowState>) => void;
 }) {
   return (
-    <Card style={styles.row}>
-      <View style={styles.rowTop}>
-        <Pressable onPress={() => onChange({ selected: !row.selected })} style={[styles.checkbox, row.selected && styles.checkboxChecked]} />
-        <View style={{ flex: 1, marginLeft: 10 }}>
-          <ThemedText variant="bodyMedium">{item.template.description}</ThemedText>
-          <ThemedText variant="caption">
-            {item.template.category}
-            {item.alreadyLaunched ? ' · já lançado neste mês' : ''}
-          </ThemedText>
-        </View>
-      </View>
-      <AmountField label="Valor" value={row.amountText} onChangeText={(t) => onChange({ amountText: t })} />
-    </Card>
+    <View style={[styles.row, item.alreadyLaunched && styles.rowAlready]}>
+      <Pressable onPress={() => onChange({ selected: !row.selected })} style={[styles.checkbox, row.selected && styles.checkboxChecked]} />
+      <ThemedText variant="caption" style={styles.rowName} numberOfLines={1}>
+        {item.template.description}
+        {item.alreadyLaunched ? ' (já lançado)' : ''}
+      </ThemedText>
+      <TextInput
+        value={row.amountText}
+        onChangeText={(t) => onChange({ amountText: t })}
+        keyboardType="decimal-pad"
+        style={styles.rowAmountInput}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   scroll: { paddingVertical: 16, paddingBottom: 48 },
+  panelHeadRow: { marginBottom: 8 },
   title: { marginTop: 24, marginBottom: 12 },
-  empty: { marginBottom: 8 },
-  sectionTitle: { marginTop: 8, marginBottom: 8 },
-  row: { marginBottom: 10 },
-  rowTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+  empty: { marginBottom: 8, color: colors.textMuted },
+  group: { marginBottom: 8 },
+  groupTitle: { marginBottom: 6, letterSpacing: 1 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 5 },
+  rowAlready: { opacity: 0.5 },
+  rowName: { flex: 1, fontSize: 12.5, color: colors.textRowAlt },
+  rowAmountInput: {
+    width: 80,
+    fontSize: 11.5,
+    textAlign: 'right',
+    color: colors.textPrimary,
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.borderSubtle,
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+  },
   checkbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 5,
+    width: 18,
+    height: 18,
+    borderRadius: 4,
     borderWidth: 2,
     borderColor: colors.borderStrong,
   },
   checkboxChecked: { backgroundColor: colors.accentPessoal, borderColor: colors.accentPessoal },
-  launchButton: { marginTop: 8, marginBottom: 8 },
-  feedback: { color: colors.accentPessoal, textAlign: 'center', marginBottom: 8 },
+  launchButton: { marginTop: 8, marginBottom: 4 },
+  feedback: { color: colors.accentPessoal, textAlign: 'center', marginTop: 8 },
   exportHint: { marginBottom: 12 },
 });
