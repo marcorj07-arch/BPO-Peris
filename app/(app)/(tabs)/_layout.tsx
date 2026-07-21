@@ -25,28 +25,28 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: 'Lançamentos',
-          tabBarIcon: ({ focused }) => <TabIcon symbol="≡" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon symbol="☰" focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="recorrentes"
         options={{
           title: 'Recorrentes',
-          tabBarIcon: ({ focused }) => <TabIcon symbol="★" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon symbol="↺" focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="fluxo-caixa"
         options={{
           title: 'Fluxo de Caixa',
-          tabBarIcon: ({ focused }) => <TabIcon symbol="⟶" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon symbol="📈" focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="conciliacao"
         options={{
           title: 'Conciliação',
-          tabBarIcon: ({ focused }) => <TabIcon symbol="⇄" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon symbol="⚖" focused={focused} />,
         }}
       />
       <Tabs.Screen

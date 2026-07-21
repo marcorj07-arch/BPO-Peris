@@ -55,6 +55,11 @@ const styles = StyleSheet.create({
     borderColor: colors.borderSubtle,
     borderRadius: 10,
     padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    elevation: 3,
   },
   labelRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
 });
